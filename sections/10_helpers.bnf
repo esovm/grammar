@@ -342,12 +342,7 @@ AttachedMDList
 ;
 
 AttachedMD
-	: MetadataName MD   << astx.NewAttachedMD($0, $1) >>
-;
-
-MD
-	: Metadata
-	| MetadataID
+	: MetadataName MDNode   << astx.NewAttachedMD($0, $1) >>
 ;
 
 OptCommaAttachedMDList

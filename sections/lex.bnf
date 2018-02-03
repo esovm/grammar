@@ -1,8 +1,16 @@
 // ### [ Lexical part ] ########################################################
 
-_ascii_letter
+_ascii_letter_upper
 	: 'A' - 'Z'
-	| 'a' - 'z'
+;
+
+_ascii_letter_lower
+	: 'a' - 'z'
+;
+
+_ascii_letter
+	: _ascii_letter_upper
+	| _ascii_letter_lower
 ;
 
 _letter
@@ -109,6 +117,10 @@ metadata_name
 
 metadata_id
 	: '!' _id
+;
+
+ident
+	: _ascii_letter_upper { _ascii_letter | _decimal_digit | '_' }
 ;
 
 // === [ Integer literals ] ====================================================

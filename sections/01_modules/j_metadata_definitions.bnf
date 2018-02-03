@@ -1,5 +1,18 @@
-// --- [ Metadata definitions ] ------------------------------------------------
+// TODO: Rename MetadataID to MDNodeID. ref: ParseMDNodeID
 
+// ref: ParseMDNode
+MDNode // used as attached metadata identifier
+	: MDNodeVector
+	| MetadataID
+	| SpecializedMDNode
+;
+
+MetadataValue // used as function arguments in call instructions
+	: Metadata
+	| ConcreteType LocalIdent   << astx.NewValue($0, $1) >>
+;
+
+// ref: ParseNamedMetadata
 NamedMetadataDef
 	: MetadataName "=" "!" "{" MetadataIDs "}"   << astx.NewNamedMetadataDef($0, $4) >>
 ;
@@ -14,8 +27,10 @@ MetadataIDList
 	| MetadataIDList "," MetadataID   << astx.AppendMetadataID($0, $2) >>
 ;
 
+// ref: ParseStandaloneMetadata
 MetadataDef
-	: MetadataID "=" OptDistinct Metadata   << astx.NewMetadataDef($0, $3) >>
+	: MetadataID "=" OptDistinct MDNodeVector        << astx.NewMetadataDef($0, $3) >>
+	| MetadataID "=" OptDistinct SpecializedMDNode   << astx.NewMetadataDef($0, $3) >>
 ;
 
 OptDistinct
@@ -23,29 +38,88 @@ OptDistinct
 	| "distinct"
 ;
 
-Metadata
-	: "!" "{" MetadataNodes "}"   << astx.NewMetadata($2) >>
+// ref: ParseMDNodeVector
+MDNodeVector
+	: "!" "{" MDElements "}"   << astx.NewMetadata($2) >>
 ;
 
-MetadataNodes
+// => ref: ParseMDNodeVector
+MDElements
 	: empty
-	| MetadataNodeList
+	| MDElementList
 ;
 
-MetadataNodeList
-	: MetadataNode                        << astx.NewMetadataNodeList($0) >>
-	| MetadataNodeList "," MetadataNode   << astx.AppendMetadataNode($0, $2) >>
+// => ref: ParseMDNodeVector
+MDElementList
+	: MDElement                     << astx.NewMetadataNodeList($0) >>
+	| MDElementList "," MDElement   << astx.AppendMetadataNode($0, $2) >>
 ;
 
-MetadataNode
-	: Metadata
+// => ref: ParseMDNodeVector
+MDElement
+	: MDNullLit
+	| Metadata
+;
+
+// ref: ParseMetadata
+Metadata
+	// ref: ParseValueAsMetadata
+	: Type Constant       << astx.NewConstant($0, $1) >>
 	| MetadataID
-	| "!" string_lit   << astx.NewMetadataString($1) >>
-	| Type Constant    << astx.NewConstant($0, $1) >>
+	| MDNodeVector
+	| MDString
+	| SpecializedMDNode
 ;
 
-MetadataValue
-	: MetadataNode
-	| ConcreteType LocalIdent   << astx.NewValue($0, $1) >>
+// ref: ParseMDString
+MDString
+	: "!" string_lit   << astx.NewMetadataString($1) >>
+;
+
+SpecializedMDNode
+	: MetadataName "(" MDFields ")"
+;
+
+MDFields
+	: empty
+	| MDFieldList
+	| MDValueList
+;
+
+MDFieldList
+	: MDField
+	| MDFieldList "," MDField
+;
+
+MDField
+	: LabelIdent MDValue
+;
+
+MDValueList
+	: MDValue
+	| MDValueList "," MDValue
+;
+
+MDValue
+	: int_lit
+	| MetadataID
+	| string_lit
+	| BoolLit
+	| MDFlagList
+	| MDNullLit
+	| Type Constant
+;
+
+MDFlagList
+	: MDFlag
+	| MDFlagList "|" MDFlag
+;
+
+MDFlag
+	: ident
+;
+
+MDNullLit
+	: NullConst   << astx.NewValue(&ast.MetadataType{}, $0) >>
 ;
 
